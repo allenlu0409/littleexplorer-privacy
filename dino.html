@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小小探索家 恐龍小圖鑑</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; padding: 0 0 4rem;
+    font-family: "PingFang TC", "Hiragino Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+    background: linear-gradient(180deg, #FFF6E3 0%, #FDE8C8 100%);
+    color: #3A3230; min-height: 100vh;
+  }
+  header {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+    padding: .8rem 1rem; background: #FF7043; color: #fff;
+    box-shadow: 0 3px 10px rgba(0,0,0,.15);
+  }
+  header h1 { font-size: 1.25rem; margin: 0; flex: 1; }
+  .chip {
+    border: 0; border-radius: 999px; padding: .45rem .9rem;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+    background: #FFD54F; color: #5D4037; box-shadow: 0 2px 0 #C8A63C;
+  }
+  .chip:active { transform: translateY(2px); box-shadow: none; }
+  #stickerCount { background: #fff; color: #E8574B; }
+  #grid {
+    display: grid; gap: .9rem; padding: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    max-width: 52rem; margin: 0 auto;
+  }
+  .card {
+    border: 0; border-radius: 1.2rem; padding: .8rem .5rem .9rem;
+    background: #fff; cursor: pointer; text-align: center;
+    box-shadow: 0 4px 0 rgba(0,0,0,.08);
+    transition: transform .12s;
+  }
+  .card:active { transform: scale(.95); }
+  .card svg { width: 100%; height: auto; }
+  .card .zh { font-size: 1.15rem; font-weight: 800; margin-top: .3rem; }
+  .card .en { font-size: .8rem; color: #8A7F76; }
+  /* 詳細頁 */
+  #overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: rgba(58,50,48,.45); display: flex;
+    align-items: center; justify-content: center; padding: 1rem;
+  }
+  #overlay[hidden] { display: none; }
+  .sheet {
+    background: #FFFDF5; border-radius: 1.6rem; padding: 1.2rem 1.2rem 1.4rem;
+    width: 100%; max-width: 26rem; max-height: 92vh; overflow-y: auto;
+    text-align: center; position: relative;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .sheet .close {
+    position: absolute; top: .7rem; right: .7rem;
+    border: 0; background: #EFE5D5; border-radius: 999px;
+    width: 2.4rem; height: 2.4rem; font-size: 1.2rem; cursor: pointer;
+  }
+  .sheet svg { width: min(65%, 15rem); height: auto; }
+  .sheet h2 { margin: .2rem 0 0; font-size: 1.6rem; }
+  .sheet .en { color: #8A7F76; margin: 0 0 .6rem; }
+  .facts { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin: .5rem 0 .8rem; }
+  .facts span {
+    background: #FFE9B8; border-radius: 999px; padding: .35rem .8rem;
+    font-size: .95rem; font-weight: 700; color: #6D4C41;
+  }
+  .funfact { font-size: 1.05rem; line-height: 1.7; margin: .2rem 0 1rem; }
+  .bigbtns { display: flex; gap: .7rem; justify-content: center; flex-wrap: wrap; }
+  .bigbtn {
+    border: 0; border-radius: 1.1rem; padding: .8rem 1.2rem;
+    font-size: 1.15rem; font-weight: 800; cursor: pointer; color: #fff;
+  }
+  .roarbtn { background: #FF7043; box-shadow: 0 4px 0 #D35835; }
+  .saybtn  { background: #4FC3F7; box-shadow: 0 4px 0 #3D9BC7; }
+  .bigbtn:active { transform: translateY(3px); box-shadow: none; }
+  .wiggle { animation: wiggle .5s; }
+  @keyframes wiggle {
+    0%,100% { transform: rotate(0); } 25% { transform: rotate(-4deg) scale(1.05); }
+    50% { transform: rotate(3deg) scale(1.05); } 75% { transform: rotate(-2deg); }
+  }
+  /* 考考你 */
+  .quizQ { font-size: 1.35rem; font-weight: 800; margin: .3rem 0 .9rem; }
+  .quizOpts { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; }
+  .quizOpts .card svg { width: 100%; }
+  .quizMsg { min-height: 1.8rem; font-size: 1.15rem; font-weight: 800; margin-top: .8rem; color: #E8574B; }
+  .shelf { margin-top: .6rem; font-size: 1.4rem; letter-spacing: .15rem; word-break: break-all; }
+  .confetti {
+    position: fixed; top: -2rem; z-index: 20; font-size: 1.6rem;
+    animation: fall 1.2s linear forwards; pointer-events: none;
+  }
+  @keyframes fall { to { transform: translateY(110vh) rotate(540deg); } }
+  footer { text-align: center; font-size: .85rem; color: #8A7F76; padding: 1.5rem 1rem 0; }
+  footer a { color: #E8574B; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🦕 恐龍小圖鑑</h1>
+  <button class="chip" id="quizBtn">🎯 考考你</button>
+  <span class="chip" id="stickerCount">⭐ 0</span>
+</header>
+
+<main id="grid"></main>
+
+<div id="overlay" hidden><div class="sheet" id="sheet"></div></div>
+
+<footer>
+  <p>所有叫聲都在裝置上即時合成,不需網路、不收集任何資料。<br>
+  貼紙只存在這台裝置裡。<a href="index.html">隱私政策</a></p>
+</footer>
+
+<script>
+"use strict";
+/* ---------- 恐龍資料 ---------- */
+function svgWrap(inner){ return '<svg viewBox="0 0 200 160" role="img">' + inner + '</svg>'; }
+function eye(x,y){ return '<circle cx="'+x+'" cy="'+y+'" r="7" fill="#3A3230"/><circle cx="'+(x+2.5)+'" cy="'+(y-2.5)+'" r="2.5" fill="#fff"/>'; }
+function smile(x,y){ return '<path d="M'+(x-9)+','+y+' Q'+x+','+(y+8)+' '+(x+9)+','+y+'" stroke="#3A3230" stroke-width="3" fill="none" stroke-linecap="round"/>'; }
+
+const DINOS = [
+  { id:'trex', zh:'暴龍', en:'Tyrannosaurus Rex', diet:'🍖 肉食', size:'📏 約 12 公尺', era:'⏳ 白堊紀晚期',
+    fact:'暴龍的牙齒像香蕉一樣大!牠的手雖然小小的,咬起東西卻是最大力的。',
+    svg: svgWrap(
+      '<path d="M30,118 Q5,110 8,88 Q28,96 46,102 Z" fill="#5FA857"/>'+
+      '<ellipse cx="88" cy="108" rx="46" ry="34" fill="#7BC96F"/>'+
+      '<rect x="62" y="126" width="16" height="26" rx="8" fill="#5FA857"/>'+
+      '<rect x="96" y="126" width="16" height="26" rx="8" fill="#5FA857"/>'+
+      '<circle cx="138" cy="58" r="34" fill="#7BC96F"/>'+
+      '<path d="M120,74 Q140,92 166,72 L162,62 Z" fill="#8ED384"/>'+
+      '<path d="M128,76 l5,8 5,-8 5,8 5,-8" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>'+
+      '<rect x="108" y="96" width="18" height="8" rx="4" fill="#5FA857" transform="rotate(28 108 96)"/>'+
+      eye(146,50)+smile(146,66)
+    )},
+  { id:'tricera', zh:'三角龍', en:'Triceratops', diet:'🌿 草食', size:'📏 約 9 公尺', era:'⏳ 白堊紀晚期',
+    fact:'三角龍頭上有三根角,後面還有一片大骨盾,像戴了一頂超帥的盾牌帽!',
+    svg: svgWrap(
+      '<path d="M28,120 Q8,112 12,92 Q30,100 46,106 Z" fill="#E88A3C"/>'+
+      '<ellipse cx="86" cy="110" rx="46" ry="32" fill="#F5A25A"/>'+
+      '<rect x="60" y="126" width="15" height="26" rx="7" fill="#E88A3C"/>'+
+      '<rect x="96" y="126" width="15" height="26" rx="7" fill="#E88A3C"/>'+
+      '<circle cx="132" cy="72" r="36" fill="#F8C08A"/>'+
+      '<circle cx="140" cy="76" r="27" fill="#F5A25A"/>'+
+      '<path d="M118,44 L112,26 L126,38 Z" fill="#FFF3D6"/>'+
+      '<path d="M144,38 L144,18 L156,34 Z" fill="#FFF3D6"/>'+
+      '<path d="M162,66 L180,60 L166,76 Z" fill="#FFF3D6"/>'+
+      eye(146,70)+smile(148,86)
+    )},
+  { id:'brachio', zh:'腕龍', en:'Brachiosaurus', diet:'🌿 草食', size:'📏 約 26 公尺', era:'⏳ 侏羅紀晚期',
+    fact:'腕龍的脖子好長好長,可以吃到最高的樹葉,像一台活的雲梯車!',
+    svg: svgWrap(
+      '<path d="M26,124 Q6,116 10,96 Q28,104 44,110 Z" fill="#5B9BD5"/>'+
+      '<ellipse cx="84" cy="116" rx="46" ry="28" fill="#7FB3E3"/>'+
+      '<rect x="58" y="128" width="15" height="26" rx="7" fill="#5B9BD5"/>'+
+      '<rect x="94" y="128" width="15" height="26" rx="7" fill="#5B9BD5"/>'+
+      '<path d="M112,104 Q128,60 132,34 L154,36 Q152,70 140,108 Z" fill="#7FB3E3"/>'+
+      '<circle cx="146" cy="30" r="18" fill="#7FB3E3"/>'+
+      eye(150,26)+smile(150,36)
+    )},
+  { id:'stego', zh:'劍龍', en:'Stegosaurus', diet:'🌿 草食', size:'📏 約 9 公尺', era:'⏳ 侏羅紀晚期',
+    fact:'劍龍背上有一排大骨板,像小山一樣;尾巴上還有四根尖尖的刺喔!',
+    svg: svgWrap(
+      '<path d="M26,118 Q6,110 12,92 Q28,100 44,104 Z" fill="#9C6BB5"/>'+
+      '<path d="M20,96 l6,-12 6,12 Z" fill="#D9A8E8"/>'+
+      '<ellipse cx="92" cy="110" rx="50" ry="32" fill="#B98BD0"/>'+
+      '<path d="M56,84 l10,-22 10,22 Z" fill="#D9A8E8"/>'+
+      '<path d="M82,76 l11,-26 11,26 Z" fill="#D9A8E8"/>'+
+      '<path d="M110,80 l10,-22 10,22 Z" fill="#D9A8E8"/>'+
+      '<rect x="66" y="126" width="15" height="26" rx="7" fill="#9C6BB5"/>'+
+      '<rect x="102" y="126" width="15" height="26" rx="7" fill="#9C6BB5"/>'+
+      '<circle cx="152" cy="100" r="20" fill="#B98BD0"/>'+
+      eye(158,96)+smile(158,106)
+    )},
+  { id:'ptero', zh:'翼手龍', en:'Pteranodon', diet:'🐟 吃魚', size:'📏 翼展約 7 公尺', era:'⏳ 白堊紀',
+    fact:'翼手龍會飛,張開翅膀像一台小飛機!偷偷告訴你:牠其實是恐龍的飛天親戚喔。',
+    svg: svgWrap(
+      '<path d="M96,86 L18,52 Q44,88 84,100 Z" fill="#4DB6AC"/>'+
+      '<path d="M104,86 L182,52 Q156,88 116,100 Z" fill="#4DB6AC"/>'+
+      '<ellipse cx="100" cy="98" rx="22" ry="26" fill="#80CBC4"/>'+
+      '<circle cx="100" cy="62" r="18" fill="#80CBC4"/>'+
+      '<path d="M108,48 L128,34 L114,58 Z" fill="#4DB6AC"/>'+
+      '<path d="M88,68 L64,80 L90,78 Z" fill="#B2DFDB"/>'+
+      eye(104,58)+
+      '<path d="M96,120 l4,10 4,-10" stroke="#4DB6AC" stroke-width="4" fill="none" stroke-linecap="round"/>'
+    )},
+  { id:'raptor', zh:'迅猛龍', en:'Velociraptor', diet:'🍖 肉食', size:'📏 約 2 公尺', era:'⏳ 白堊紀晚期',
+    fact:'迅猛龍跑得超級快,大概只有火雞那麼大,身上可能還長著羽毛呢!',
+    svg: svgWrap(
+      '<path d="M22,106 Q2,96 10,78 Q26,88 44,94 Z" fill="#E3B23C"/>'+
+      '<ellipse cx="84" cy="102" rx="40" ry="26" fill="#F2C94C"/>'+
+      '<rect x="62" y="116" width="13" height="30" rx="6" fill="#E3B23C"/>'+
+      '<rect x="94" y="116" width="13" height="30" rx="6" fill="#E3B23C"/>'+
+      '<circle cx="130" cy="62" r="24" fill="#F2C94C"/>'+
+      '<path d="M120,42 q6,-14 18,-10 q-8,4 -6,12 Z" fill="#E88A3C"/>'+
+      '<path d="M146,70 Q160,76 168,70 L164,64 Z" fill="#F7DD8B"/>'+
+      '<rect x="104" y="92" width="16" height="7" rx="3.5" fill="#E3B23C" transform="rotate(24 104 92)"/>'+
+      eye(136,56)+smile(138,70)
+    )},
+  { id:'anky', zh:'甲龍', en:'Ankylosaurus', diet:'🌿 草食', size:'📏 約 8 公尺', era:'⏳ 白堊紀晚期',
+    fact:'甲龍全身穿著硬硬的盔甲,尾巴還有一個大鎚子,壞人都不敢欺負牠!',
+    svg: svgWrap(
+      '<path d="M40,112 Q20,110 14,102" stroke="#A1887F" stroke-width="10" fill="none" stroke-linecap="round"/>'+
+      '<circle cx="12" cy="100" r="12" fill="#8D6E63"/>'+
+      '<ellipse cx="94" cy="106" rx="52" ry="30" fill="#BCAAA4"/>'+
+      '<circle cx="70" cy="88" r="7" fill="#8D6E63"/>'+
+      '<circle cx="94" cy="82" r="7" fill="#8D6E63"/>'+
+      '<circle cx="118" cy="88" r="7" fill="#8D6E63"/>'+
+      '<circle cx="82" cy="102" r="6" fill="#8D6E63"/>'+
+      '<circle cx="106" cy="102" r="6" fill="#8D6E63"/>'+
+      '<rect x="64" y="124" width="15" height="24" rx="7" fill="#A1887F"/>'+
+      '<rect x="104" y="124" width="15" height="24" rx="7" fill="#A1887F"/>'+
+      '<circle cx="156" cy="102" r="19" fill="#BCAAA4"/>'+
+      eye(162,98)+smile(162,108)
+    )},
+  { id:'plesio', zh:'蛇頸龍', en:'Plesiosaurus', diet:'🐟 吃魚', size:'📏 約 15 公尺', era:'⏳ 侏羅紀',
+    fact:'蛇頸龍住在大海裡,脖子長長的像水中的長頸鹿。牠也是恐龍的海裡親戚喔!',
+    svg: svgWrap(
+      '<path d="M0,132 Q20,122 40,132 T80,132 T120,132 T160,132 T200,132 L200,160 L0,160 Z" fill="#B3E5FC"/>'+
+      '<ellipse cx="96" cy="118" rx="44" ry="24" fill="#4FC3F7"/>'+
+      '<path d="M70,132 L52,146 L78,140 Z" fill="#29A3DB"/>'+
+      '<path d="M116,132 L134,148 L138,134 Z" fill="#29A3DB"/>'+
+      '<path d="M118,108 Q134,70 138,46 L158,50 Q154,80 144,112 Z" fill="#4FC3F7"/>'+
+      '<circle cx="150" cy="42" r="16" fill="#4FC3F7"/>'+
+      eye(154,38)+smile(154,48)
+    )},
+];
+
+/* ---------- 叫聲合成(Web Audio) ---------- */
+let actx = null;
+function audio(){
+  if(!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if(actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function tone(c, o){
+  const t = c.currentTime + (o.at || 0);
+  const dur = o.dur || 0.5;
+  const osc = c.createOscillator();
+  osc.type = o.type || 'sine';
+  osc.frequency.setValueAtTime(o.f0 || 200, t);
+  if(o.f1) osc.frequency.exponentialRampToValueAtTime(o.f1, t + dur);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(o.vol || 0.22, t + 0.04);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  let head = osc;
+  if(o.lp){
+    const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = o.lp;
+    osc.connect(f); head = f;
+  }
+  head.connect(g); g.connect(c.destination);
+  if(o.vibF){
+    const l = c.createOscillator(); l.frequency.value = o.vibF;
+    const lg = c.createGain(); lg.gain.value = o.vibD || 20;
+    l.connect(lg); lg.connect(osc.frequency);
+    l.start(t); l.stop(t + dur + 0.1);
+  }
+  osc.start(t); osc.stop(t + dur + 0.1);
+}
+function hiss(c, o){
+  const t = c.currentTime + (o.at || 0);
+  const dur = o.dur || 0.4;
+  const buf = c.createBuffer(1, c.sampleRate * dur, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for(let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const src = c.createBufferSource(); src.buffer = buf;
+  const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = o.lp || 600;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(o.vol || 0.12, t + 0.03);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(f); f.connect(g); g.connect(c.destination);
+  src.start(t);
+}
+function roar(kind){
+  const c = audio();
+  switch(kind){
+    case 'trex': // 低沉怒吼
+      tone(c, {type:'sawtooth', f0:95, f1:50, dur:1.3, vol:0.3, lp:420, vibF:22, vibD:14});
+      tone(c, {type:'sawtooth', f0:140, f1:70, dur:1.1, vol:0.14, lp:500});
+      hiss(c, {dur:1.0, lp:350, vol:0.1});
+      break;
+    case 'tricera': // 兩聲低鳴喇叭
+      tone(c, {type:'triangle', f0:170, f1:120, dur:0.5, vol:0.28, lp:900});
+      tone(c, {type:'triangle', f0:190, f1:130, dur:0.6, at:0.55, vol:0.28, lp:900});
+      break;
+    case 'brachio': // 悠長低沉的鳴叫
+      tone(c, {type:'sine', f0:75, dur:1.6, vol:0.32, vibF:4, vibD:6});
+      tone(c, {type:'triangle', f0:150, f1:110, dur:1.4, vol:0.1, lp:600});
+      break;
+    case 'stego': // 三聲短短的咕嚕
+      for(let i = 0; i < 3; i++)
+        tone(c, {type:'sawtooth', f0:110, f1:85, dur:0.22, at:i*0.3, vol:0.24, lp:320});
+      break;
+    case 'ptero': // 高亢尖叫
+      tone(c, {type:'sawtooth', f0:750, f1:1500, dur:0.35, vol:0.13});
+      tone(c, {type:'sawtooth', f0:1500, f1:600, dur:0.4, at:0.35, vol:0.13});
+      break;
+    case 'raptor': // 連續啾啾叫
+      for(let i = 0; i < 4; i++)
+        tone(c, {type:'square', f0:1000, f1:1700, dur:0.12, at:i*0.18, vol:0.08});
+      break;
+    case 'anky': // 咚!(鎚子)+ 咕嚕
+      tone(c, {type:'sine', f0:60, f1:35, dur:0.35, vol:0.4});
+      hiss(c, {dur:0.15, lp:200, vol:0.2});
+      tone(c, {type:'sawtooth', f0:100, f1:80, dur:0.4, at:0.45, vol:0.22, lp:300});
+      break;
+    case 'plesio': // 水裡的咕嚕轉音
+      tone(c, {type:'sine', f0:300, dur:1.1, vol:0.2, vibF:7, vibD:60});
+      tone(c, {type:'sine', f0:450, dur:0.9, at:0.2, vol:0.1, vibF:9, vibD:80});
+      break;
+  }
+}
+
+/* ---------- 語音唸名字 ---------- */
+function say(text){
+  if(!('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-TW'; u.rate = 0.85; u.pitch = 1.15;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+/* ---------- 貼紙(只存本機) ---------- */
+const STICKER_KEY = 'le_dino_stickers';
+function getStickers(){
+  try { return JSON.parse(localStorage.getItem(STICKER_KEY)) || []; }
+  catch(e){ return []; }
+}
+function addSticker(s){
+  const list = getStickers(); list.push(s);
+  try { localStorage.setItem(STICKER_KEY, JSON.stringify(list)); } catch(e){}
+  renderStickerCount();
+}
+function renderStickerCount(){
+  document.getElementById('stickerCount').textContent = '⭐ ' + getStickers().length;
+}
+
+/* ---------- 圖鑑列表 ---------- */
+const grid = document.getElementById('grid');
+DINOS.forEach(d => {
+  const b = document.createElement('button');
+  b.className = 'card';
+  b.innerHTML = d.svg + '<div class="zh">' + d.zh + '</div><div class="en">' + d.en + '</div>';
+  b.addEventListener('click', () => openDetail(d));
+  grid.appendChild(b);
+});
+
+/* ---------- 詳細頁 ---------- */
+const overlay = document.getElementById('overlay');
+const sheet = document.getElementById('sheet');
+function closeSheet(){ overlay.hidden = true; }
+overlay.addEventListener('click', e => { if(e.target === overlay) closeSheet(); });
+
+function openDetail(d){
+  sheet.innerHTML =
+    '<button class="close" aria-label="關閉">✕</button>' +
+    '<div id="detailArt">' + d.svg + '</div>' +
+    '<h2>' + d.zh + '</h2><p class="en">' + d.en + '</p>' +
+    '<div class="facts"><span>' + d.diet + '</span><span>' + d.size + '</span><span>' + d.era + '</span></div>' +
+    '<p class="funfact">' + d.fact + '</p>' +
+    '<div class="bigbtns">' +
+      '<button class="bigbtn roarbtn">🔊 聽叫聲</button>' +
+      '<button class="bigbtn saybtn">🗣️ 唸給我聽</button>' +
+    '</div>';
+  sheet.querySelector('.close').addEventListener('click', closeSheet);
+  sheet.querySelector('.roarbtn').addEventListener('click', () => {
+    roar(d.id);
+    const art = document.getElementById('detailArt');
+    art.classList.remove('wiggle'); void art.offsetWidth; art.classList.add('wiggle');
+  });
+  sheet.querySelector('.saybtn').addEventListener('click', () => say(d.zh + '。' + d.fact));
+  overlay.hidden = false;
+}
+
+/* ---------- 考考你 ---------- */
+function shuffle(a){
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+document.getElementById('quizBtn').addEventListener('click', startQuiz);
+
+function startQuiz(){
+  const opts = shuffle(DINOS.slice()).slice(0, 3);
+  const target = opts[Math.floor(Math.random() * opts.length)];
+  sheet.innerHTML =
+    '<button class="close" aria-label="關閉">✕</button>' +
+    '<div class="quizQ">找一找,哪一隻是<br>「' + target.zh + '」?</div>' +
+    '<div class="quizOpts"></div>' +
+    '<div class="quizMsg"></div>' +
+    '<div class="shelf">' + getStickers().join('') + '</div>';
+  sheet.querySelector('.close').addEventListener('click', closeSheet);
+  const box = sheet.querySelector('.quizOpts');
+  const msg = sheet.querySelector('.quizMsg');
+  say('找一找,哪一隻是' + target.zh + '?');
+  opts.forEach(d => {
+    const b = document.createElement('button');
+    b.className = 'card';
+    b.innerHTML = d.svg;
+    b.addEventListener('click', () => {
+      if(d.id === target.id){
+        msg.textContent = '🎉 答對了,好棒!';
+        roar(d.id); say('答對了,你好棒!');
+        addSticker(pickSticker());
+        sheet.querySelector('.shelf').textContent = getStickers().join('');
+        confetti();
+        setTimeout(startQuiz, 1800);
+      } else {
+        msg.textContent = '再試一次,你可以的!';
+        b.classList.remove('wiggle'); void b.offsetWidth; b.classList.add('wiggle');
+      }
+    });
+    box.appendChild(b);
+  });
+  overlay.hidden = false;
+}
+function pickSticker(){
+  const s = ['🦖','🦕','🌋','🥚','🌿','⭐','🌈','🍖'];
+  return s[Math.floor(Math.random() * s.length)];
+}
+function confetti(){
+  const s = ['🎉','⭐','🦕','🦖','✨'];
+  for(let i = 0; i < 14; i++){
+    const e = document.createElement('span');
+    e.className = 'confetti';
+    e.textContent = s[Math.floor(Math.random() * s.length)];
+    e.style.left = Math.random() * 100 + 'vw';
+    e.style.animationDelay = (Math.random() * 0.4) + 's';
+    document.body.appendChild(e);
+    setTimeout(() => e.remove(), 1800);
+  }
+}
+
+renderStickerCount();
+</script>
+</body>
+</html>
