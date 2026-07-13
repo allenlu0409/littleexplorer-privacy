@@ -18,7 +18,7 @@
     padding: .8rem 1rem; background: #FF7043; color: #fff;
     box-shadow: 0 3px 10px rgba(0,0,0,.15);
   }
-  header h1 { font-size: 1.25rem; margin: 0; flex: 1; }
+  header h1 { font-size: 1.25rem; margin: 0; flex: 1 0 auto; white-space: nowrap; }
   .chip {
     border: 0; border-radius: 999px; padding: .45rem .9rem;
     font-size: 1rem; font-weight: 700; cursor: pointer;
@@ -76,6 +76,23 @@
   }
   .roarbtn { background: #FF7043; box-shadow: 0 4px 0 #D35835; }
   .saybtn  { background: #4FC3F7; box-shadow: 0 4px 0 #3D9BC7; }
+  .sizebtn { background: #66BB6A; box-shadow: 0 4px 0 #4E9852; }
+  #sizeBox { margin: .8rem 0 .2rem; }
+  #sizeBox .kids { font-size: 1.5rem; line-height: 1.9; word-break: break-all; }
+  #sizeBox .kids span { display: inline-block; animation: popin .35s backwards; }
+  @keyframes popin { from { transform: scale(0); } to { transform: scale(1); } }
+  #sizeBox p { font-size: 1.05rem; font-weight: 700; margin: .4rem 0 0; }
+  /* 著色本 */
+  .palette { display: flex; flex-wrap: wrap; gap: .55rem; justify-content: center; margin: .8rem 0; }
+  .dot {
+    width: 2.4rem; height: 2.4rem; border-radius: 50%; border: 3px solid #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,.25); cursor: pointer; padding: 0;
+  }
+  .dot.sel { outline: 4px solid #3A3230; outline-offset: 2px; transform: scale(1.1); }
+  #paintArt svg { width: min(80%, 17rem); }
+  #paintArt [fill]:not([fill="none"]) { cursor: pointer; }
+  .miniGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+  .miniGrid .card { padding: .4rem; }
   .bigbtn:active { transform: translateY(3px); box-shadow: none; }
   .wiggle { animation: wiggle .5s; }
   @keyframes wiggle {
@@ -102,6 +119,7 @@
   <h1>🦕 恐龍小圖鑑</h1>
   <button class="chip" id="quizBtn">🎯 考考你</button>
   <button class="chip" id="eggBtn">🥚 驚喜蛋</button>
+  <button class="chip" id="paintBtn">🎨 著色本</button>
   <span class="chip" id="stickerCount">⭐ 0</span>
 </header>
 
@@ -434,7 +452,9 @@ function openDetail(d){
     '<div class="bigbtns">' +
       '<button class="bigbtn roarbtn">🔊 聽叫聲</button>' +
       '<button class="bigbtn saybtn">🗣️ 唸給我聽</button>' +
-    '</div>';
+      '<button class="bigbtn sizebtn">📏 有多長?</button>' +
+    '</div>' +
+    '<div id="sizeBox"></div>';
   sheet.querySelector('.close').addEventListener('click', closeSheet);
   sheet.querySelector('.roarbtn').addEventListener('click', () => {
     roar(d.id);
@@ -442,7 +462,30 @@ function openDetail(d){
     art.classList.remove('wiggle'); void art.offsetWidth; art.classList.add('wiggle');
   });
   sheet.querySelector('.saybtn').addEventListener('click', () => say(d.zh + '。' + d.fact));
+  sheet.querySelector('.sizebtn').addEventListener('click', () => showSize(d));
   overlay.hidden = false;
+}
+
+/* ---------- 大小比一比 ---------- */
+const METERS = { trex:12, tricera:9, brachio:26, stego:9, ptero:7, raptor:2, anky:8,
+                 plesio:15, parasaur:10, spino:15, diplo:27, archaeo:0.5 };
+function showSize(d){
+  const box = document.getElementById('sizeBox');
+  const m = METERS[d.id];
+  if(m < 1){
+    box.innerHTML = '<div class="kids"><span>🧒</span> 比 <span>🐦</span> 大一點點</div>' +
+      '<p>' + d.zh + '比小朋友還小,差不多像一隻鴿子!</p>';
+    say(d.zh + '比小朋友還小,差不多像一隻鴿子!');
+  } else {
+    const n = Math.round(m);
+    let kids = '';
+    for(let i = 0; i < n; i++)
+      kids += '<span style="animation-delay:' + (i * 0.08) + 's">🧒</span>';
+    box.innerHTML = '<div class="kids">' + kids + '</div>' +
+      '<p>' + d.zh + '大約 ' + m + ' 公尺,要 ' + n + ' 個小朋友手牽手才一樣長!</p>';
+    say(d.zh + '大約' + m + '公尺,要' + n + '個小朋友手牽手才一樣長!');
+  }
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 /* ---------- 考考你 ---------- */
@@ -489,6 +532,79 @@ function startQuiz(){
   });
   overlay.hidden = false;
 }
+/* ---------- 著色本 ---------- */
+const PAINTS = ['#F44336','#FF9800','#FFEB3B','#8BC34A','#26A69A','#4FC3F7','#5C6BC0',
+                '#AB47BC','#F48FB1','#8D6E63','#FFFFFF','#3A3230'];
+document.getElementById('paintBtn').addEventListener('click', startPaintPick);
+
+function startPaintPick(){
+  sheet.innerHTML =
+    '<button class="close" aria-label="關閉">✕</button>' +
+    '<div class="quizQ">🎨 選一隻恐龍來著色!</div>' +
+    '<div class="miniGrid"></div>';
+  sheet.querySelector('.close').addEventListener('click', closeSheet);
+  const box = sheet.querySelector('.miniGrid');
+  DINOS.forEach(d => {
+    const b = document.createElement('button');
+    b.className = 'card';
+    b.innerHTML = d.svg;
+    b.addEventListener('click', () => startPaint(d));
+    box.appendChild(b);
+  });
+  say('選一隻恐龍來著色!');
+  overlay.hidden = false;
+}
+
+function pop(){
+  tone(audio(), {type:'sine', f0:600, f1:900, dur:0.08, vol:0.15});
+}
+
+function startPaint(d){
+  let color = PAINTS[0];
+  sheet.innerHTML =
+    '<button class="close" aria-label="關閉">✕</button>' +
+    '<div class="quizQ">幫' + d.zh + '換新衣服!<br><small style="font-weight:400;font-size:.85rem">先點顏色,再點身體</small></div>' +
+    '<div id="paintArt">' + d.svg + '</div>' +
+    '<div class="palette"></div>' +
+    '<div class="bigbtns">' +
+      '<button class="bigbtn saybtn" id="rndBtn">🌈 隨機亂畫</button>' +
+      '<button class="bigbtn sizebtn" id="doneBtn">✅ 畫好了</button>' +
+    '</div>';
+  sheet.querySelector('.close').addEventListener('click', closeSheet);
+  const pal = sheet.querySelector('.palette');
+  PAINTS.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.className = 'dot' + (i === 0 ? ' sel' : '');
+    b.style.background = p;
+    b.setAttribute('aria-label', '顏色 ' + p);
+    b.addEventListener('click', () => {
+      color = p; pop();
+      pal.querySelectorAll('.dot').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    });
+    pal.appendChild(b);
+  });
+  const svg = sheet.querySelector('#paintArt svg');
+  const parts = [...svg.querySelectorAll('[fill]')].filter(el => el.getAttribute('fill') !== 'none');
+  svg.addEventListener('click', e => {
+    const t = e.target;
+    if(t.hasAttribute && t.hasAttribute('fill') && t.getAttribute('fill') !== 'none'){
+      t.setAttribute('fill', color); pop();
+    }
+  });
+  sheet.querySelector('#rndBtn').addEventListener('click', () => {
+    parts.forEach(el => el.setAttribute('fill', PAINTS[Math.floor(Math.random() * (PAINTS.length - 2))]));
+    roar(d.id);
+  });
+  sheet.querySelector('#doneBtn').addEventListener('click', () => {
+    say('哇,好漂亮的' + d.zh + ',你是小小藝術家!');
+    roar(d.id);
+    addSticker('🎨');
+    confetti();
+  });
+  overlay.hidden = false;
+}
+
 /* ---------- 驚喜蛋 ---------- */
 document.getElementById('eggBtn').addEventListener('click', startEgg);
 
