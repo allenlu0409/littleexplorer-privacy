@@ -127,6 +127,29 @@
   .memFace.front { background: #fff; transform: rotateY(180deg); padding: .25rem; }
   .memFace.front svg { width: 100%; height: 100%; }
   .memCard.matched .memFace.front { background: #DCEDC8; }
+  /* 挖化石 */
+  #digWrap { position: relative; width: min(78%, 17rem); margin: .4rem auto; }
+  .fossil svg * { fill: #C9BCA6 !important; }
+  #digWrap .ground { border-radius: 1rem; background: #EFE5D5; padding: .4rem; }
+  #dirt {
+    position: absolute; inset: 0; display: grid; gap: 2px;
+    grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr);
+  }
+  .dirtTile {
+    border: 0; border-radius: .4rem; cursor: pointer; padding: 0;
+    background: #8D6E63; box-shadow: inset 0 -3px 0 rgba(0,0,0,.18);
+    transition: transform .25s, opacity .25s;
+  }
+  .dirtTile:nth-child(3n) { background: #795548; }
+  .dirtTile:nth-child(7n) { background: #A1887F; }
+  .dirtTile.gone { opacity: 0; transform: scale(.2); pointer-events: none; }
+  /* 貼紙簿 */
+  .bookGrid { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; margin-top: .6rem; }
+  .bookGrid span {
+    background: #fff; border-radius: .9rem; padding: .5rem .7rem;
+    font-size: 1.5rem; font-weight: 800; box-shadow: 0 3px 0 rgba(0,0,0,.1);
+  }
+  .bookGrid small { font-size: 1rem; color: #8A7F76; }
   .bigbtn:active { transform: translateY(3px); box-shadow: none; }
   .wiggle { animation: wiggle .5s; }
   @keyframes wiggle {
@@ -849,6 +872,8 @@ const GAMES = [
   { ico:'🎨', label:'著色本',  fn: startPaintPick },
   { ico:'🍖', label:'餵恐龍',  fn: startFeed },
   { ico:'🃏', label:'翻翻樂',  fn: startMemory },
+  { ico:'⛏️', label:'挖化石',  fn: startDig },
+  { ico:'📖', label:'貼紙簿',  fn: startBook },
 ];
 document.getElementById('gameBtn').addEventListener('click', startGameMenu);
 
@@ -919,6 +944,100 @@ function startFeed(){
     });
     row.appendChild(b);
   });
+  overlay.hidden = false;
+}
+
+/* ---------- 挖化石 ---------- */
+function brush(){
+  hiss(audio(), {dur:0.12, lp:2600, vol:0.07});
+}
+function fanfare(){
+  const c = audio();
+  [523, 659, 784].forEach((f, i) =>
+    tone(c, {type:'triangle', f0:f, dur:0.25, at:i*0.16, vol:0.18}));
+}
+function startDig(){
+  const target = DINOS[Math.floor(Math.random() * DINOS.length)];
+  sheet.innerHTML =
+    '<button class="close" aria-label="關閉">✕</button>' +
+    '<div class="quizQ">⛏️ 這裡埋著化石!<br><small style="font-weight:400;font-size:.85rem">把泥土一塊一塊挖開</small></div>' +
+    '<div id="digWrap">' +
+      '<div class="ground"><div id="digArt" class="fossil">' + target.svg + '</div></div>' +
+      '<div id="dirt"></div>' +
+    '</div>' +
+    '<div class="quizOpts" id="digOpts"></div>' +
+    '<div class="quizMsg" id="digMsg"></div>' +
+    '<div class="shelf">' + getStickers().join('') + '</div>';
+  sheet.querySelector('.close').addEventListener('click', closeSheet);
+  say('這裡埋著化石!把泥土一塊一塊挖開!');
+  const dirt = sheet.querySelector('#dirt');
+  let left = 20;
+  for(let i = 0; i < 20; i++){
+    const t = document.createElement('button');
+    t.className = 'dirtTile';
+    t.setAttribute('aria-label', '泥土');
+    t.addEventListener('click', () => {
+      if(t.classList.contains('gone')) return;
+      t.classList.add('gone');
+      brush();
+      left--;
+      if(left === 0) digGuess(target);
+    }, { once: false });
+    dirt.appendChild(t);
+  }
+  overlay.hidden = false;
+}
+function digGuess(target){
+  fanfare();
+  sheet.querySelector('.quizQ').innerHTML = '哇,挖到了!<br>這是誰的化石呀?';
+  say('哇,挖到了!這是誰的化石呀?');
+  const others = shuffle(DINOS.filter(d => d.id !== target.id)).slice(0, 2);
+  const opts = shuffle([target, ...others]);
+  const box = sheet.querySelector('#digOpts');
+  const msg = sheet.querySelector('#digMsg');
+  opts.forEach(d => {
+    const b = document.createElement('button');
+    b.className = 'card';
+    b.innerHTML = d.svg + '<div class="zh" style="font-size:.95rem">' + d.zh + '</div>';
+    b.addEventListener('click', () => {
+      if(d.id === target.id){
+        sheet.querySelector('#digArt').classList.remove('fossil');
+        msg.textContent = '🎉 是' + d.zh + '的化石,你是小小考古學家!';
+        roar(d.id);
+        say('答對了!是' + d.zh + '的化石,你是小小考古學家!');
+        addSticker('🦴');
+        sheet.querySelector('.shelf').textContent = getStickers().join('');
+        confetti();
+        setTimeout(() => { if(!overlay.hidden && document.body.contains(msg)) startDig(); }, 2400);
+      } else {
+        msg.textContent = '再看看化石的形狀,牠是誰呢?';
+        b.classList.remove('wiggle'); void b.offsetWidth; b.classList.add('wiggle');
+      }
+    });
+    box.appendChild(b);
+  });
+}
+
+/* ---------- 貼紙簿 ---------- */
+function startBook(){
+  const list = getStickers();
+  const counts = {};
+  list.forEach(s => { counts[s] = (counts[s] || 0) + 1; });
+  let inner;
+  if(list.length === 0){
+    inner = '<p class="funfact">貼紙簿還空空的。<br>去遊戲樂園玩遊戲,就能收集貼紙囉!</p>';
+    say('貼紙簿還空空的,去玩遊戲收集貼紙吧!');
+  } else {
+    inner = '<p class="funfact">你已經收集了 <strong>' + list.length + '</strong> 張貼紙,好厲害!</p>' +
+      '<div class="bookGrid">' +
+      Object.keys(counts).map(s => '<span>' + s + ' <small>×' + counts[s] + '</small></span>').join('') +
+      '</div>';
+    say('哇,你已經收集了' + list.length + '張貼紙,好厲害!');
+  }
+  sheet.innerHTML =
+    '<button class="close" aria-label="關閉">✕</button>' +
+    '<div class="quizQ">📖 我的貼紙簿</div>' + inner;
+  sheet.querySelector('.close').addEventListener('click', closeSheet);
   overlay.hidden = false;
 }
 
