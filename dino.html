@@ -112,6 +112,19 @@
   @keyframes fall { to { transform: translateY(110vh) rotate(540deg); } }
   footer { text-align: center; font-size: .85rem; color: #8A7F76; padding: 1.5rem 1rem 0; }
   footer a { color: #E8574B; }
+  /* 晚安模式 */
+  body { transition: background .6s; }
+  body.night { background: linear-gradient(180deg, #1A2151 0%, #2C2A4A 100%); color: #EAE6F7; }
+  body.night header { background: #3F51B5; }
+  body.night .card { background: #3A3E63; box-shadow: 0 4px 0 rgba(0,0,0,.35); }
+  body.night .card .zh { color: #EAE6F7; }
+  body.night .card .en, body.night footer { color: #B8B3D9; }
+  body.night .card svg { opacity: .82; }
+  #stars { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 1; }
+  body.night #stars { display: block; }
+  #stars span { position: absolute; color: #FFF59D; animation: twinkle 2.2s infinite; }
+  @keyframes twinkle { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+  #grid, footer { position: relative; z-index: 2; }
 </style>
 </head>
 <body>
@@ -120,9 +133,12 @@
   <button class="chip" id="quizBtn">🎯 考考你</button>
   <button class="chip" id="eggBtn">🥚 驚喜蛋</button>
   <button class="chip" id="paintBtn">🎨 著色本</button>
+  <button class="chip" id="footBtn">🦶 腳印</button>
+  <button class="chip" id="nightBtn" aria-label="晚安模式">🌙</button>
   <span class="chip" id="stickerCount">⭐ 0</span>
 </header>
 
+<div id="stars" aria-hidden="true"></div>
 <main id="grid"></main>
 
 <div id="overlay" hidden><div class="sheet" id="sheet"></div></div>
@@ -345,6 +361,7 @@ function hiss(c, o){
   src.start(t);
 }
 function roar(kind){
+  if(night){ snore(); return; } // 晚安模式:大家都睡著了,只會打呼
   const c = audio();
   switch(kind){
     case 'trex': // 低沉怒吼
@@ -522,7 +539,7 @@ function startQuiz(){
         addSticker(pickSticker());
         sheet.querySelector('.shelf').textContent = getStickers().join('');
         confetti();
-        setTimeout(startQuiz, 1800);
+        setTimeout(() => { if(!overlay.hidden && document.body.contains(msg)) startQuiz(); }, 1800);
       } else {
         msg.textContent = '再試一次,你可以的!';
         b.classList.remove('wiggle'); void b.offsetWidth; b.classList.add('wiggle');
@@ -532,6 +549,124 @@ function startQuiz(){
   });
   overlay.hidden = false;
 }
+/* ---------- 晚安模式 ---------- */
+let night = false;
+const starsBox = document.getElementById('stars');
+for(let i = 0; i < 36; i++){
+  const s = document.createElement('span');
+  s.textContent = i % 5 === 0 ? '✦' : '·';
+  s.style.left = (Math.random() * 100) + 'vw';
+  s.style.top = (Math.random() * 100) + 'vh';
+  s.style.fontSize = (0.6 + Math.random() * 1.1) + 'rem';
+  s.style.animationDelay = (Math.random() * 2.2) + 's';
+  starsBox.appendChild(s);
+}
+const nightBtn = document.getElementById('nightBtn');
+nightBtn.addEventListener('click', () => {
+  night = !night;
+  document.body.classList.toggle('night', night);
+  nightBtn.textContent = night ? '☀️' : '🌙';
+  if(night){
+    snore();
+    say('噓,天黑了,恐龍們都睡著了。');
+  } else {
+    roar('archaeo');
+    say('早安!恐龍們起床囉!');
+  }
+});
+function snore(){
+  const c = audio();
+  for(let i = 0; i < 2; i++){
+    tone(c, {type:'sine', f0:85, f1:65, dur:0.7, at:i*1.5, vol:0.24, vibF:14, vibD:10});
+    tone(c, {type:'sine', f0:130, f1:170, dur:0.5, at:i*1.5+0.8, vol:0.1});
+  }
+}
+
+/* ---------- 這是誰的腳印? ---------- */
+function footWrap(inner){
+  return '<svg viewBox="0 0 200 160" role="img" style="width:min(50%,11rem)">'+
+    '<ellipse cx="100" cy="82" rx="76" ry="66" fill="#EFE5D5"/>' + inner + '</svg>';
+}
+const FOOTPRINTS = {
+  sharp: { ids:['trex','raptor','spino'], label:'尖尖的三趾腳印',
+    svg: footWrap(
+      '<ellipse cx="100" cy="50" rx="10" ry="27" fill="#6D4C41"/>'+
+      '<ellipse cx="66" cy="66" rx="9" ry="23" fill="#6D4C41" transform="rotate(-35 66 66)"/>'+
+      '<ellipse cx="134" cy="66" rx="9" ry="23" fill="#6D4C41" transform="rotate(35 134 66)"/>'+
+      '<path d="M96,24 L100,10 L104,24 Z" fill="#6D4C41"/>'+
+      '<path d="M48,46 L44,32 L56,40 Z" fill="#6D4C41"/>'+
+      '<path d="M144,40 L156,32 L152,46 Z" fill="#6D4C41"/>'+
+      '<ellipse cx="100" cy="102" rx="22" ry="26" fill="#6D4C41"/>'
+    )},
+  round: { ids:['brachio','diplo','anky'], label:'圓圓的大腳印',
+    svg: footWrap(
+      '<ellipse cx="100" cy="90" rx="44" ry="46" fill="#6D4C41"/>'+
+      '<ellipse cx="64" cy="56" rx="9" ry="12" fill="#6D4C41"/>'+
+      '<ellipse cx="88" cy="46" rx="9" ry="12" fill="#6D4C41"/>'+
+      '<ellipse cx="112" cy="46" rx="9" ry="12" fill="#6D4C41"/>'+
+      '<ellipse cx="136" cy="56" rx="9" ry="12" fill="#6D4C41"/>'
+    )},
+  hoof: { ids:['tricera','stego','parasaur'], label:'寬寬的蹄腳印',
+    svg: footWrap(
+      '<path d="M60,110 Q60,60 100,60 Q140,60 140,110 Q140,132 100,132 Q60,132 60,110 Z" fill="#6D4C41"/>'+
+      '<ellipse cx="72" cy="56" rx="10" ry="13" fill="#6D4C41"/>'+
+      '<ellipse cx="100" cy="48" rx="10" ry="13" fill="#6D4C41"/>'+
+      '<ellipse cx="128" cy="56" rx="10" ry="13" fill="#6D4C41"/>'
+    )},
+  tiny: { ids:['archaeo'], label:'小小的鳥腳印',
+    svg: footWrap(
+      '<path d="M100,96 L100,50 M100,96 L68,62 M100,96 L132,62 M100,96 L100,122" stroke="#6D4C41" stroke-width="9" stroke-linecap="round" fill="none"/>'
+    )},
+};
+document.getElementById('footBtn').addEventListener('click', startFoot);
+
+function startFoot(){
+  const keys = Object.keys(FOOTPRINTS);
+  const key = keys[Math.floor(Math.random() * keys.length)];
+  const fp = FOOTPRINTS[key];
+  const targetId = fp.ids[Math.floor(Math.random() * fp.ids.length)];
+  const target = DINOS.find(d => d.id === targetId);
+  // 干擾選項:從其他腳印類別各挑一隻,確保答案不會模稜兩可
+  const otherKeys = shuffle(keys.filter(k => k !== key)).slice(0, 2);
+  const others = otherKeys.map(k => {
+    const ids = FOOTPRINTS[k].ids;
+    return DINOS.find(d => d.id === ids[Math.floor(Math.random() * ids.length)]);
+  });
+  const opts = shuffle([target, ...others]);
+
+  sheet.innerHTML =
+    '<button class="close" aria-label="關閉">✕</button>' +
+    '<div class="quizQ">咦,地上有腳印!<br>這是誰的腳印呀?</div>' +
+    '<div>' + fp.svg + '</div>' +
+    '<div class="quizOpts"></div>' +
+    '<div class="quizMsg"></div>' +
+    '<div class="shelf">' + getStickers().join('') + '</div>';
+  sheet.querySelector('.close').addEventListener('click', closeSheet);
+  const box = sheet.querySelector('.quizOpts');
+  const msg = sheet.querySelector('.quizMsg');
+  say('咦,地上有' + fp.label + '!這是誰的腳印呀?');
+  opts.forEach(d => {
+    const b = document.createElement('button');
+    b.className = 'card';
+    b.innerHTML = d.svg + '<div class="zh" style="font-size:.95rem">' + d.zh + '</div>';
+    b.addEventListener('click', () => {
+      if(d.id === target.id){
+        msg.textContent = '🎉 答對了!是' + d.zh + '的' + fp.label + '!';
+        roar(d.id); say('答對了!這是' + d.zh + '的腳印!');
+        addSticker('🦶');
+        sheet.querySelector('.shelf').textContent = getStickers().join('');
+        confetti();
+        setTimeout(() => { if(!overlay.hidden && document.body.contains(msg)) startFoot(); }, 2000);
+      } else {
+        msg.textContent = '不是這隻喔,再看看腳印的形狀!';
+        b.classList.remove('wiggle'); void b.offsetWidth; b.classList.add('wiggle');
+      }
+    });
+    box.appendChild(b);
+  });
+  overlay.hidden = false;
+}
+
 /* ---------- 著色本 ---------- */
 const PAINTS = ['#F44336','#FF9800','#FFEB3B','#8BC34A','#26A69A','#4FC3F7','#5C6BC0',
                 '#AB47BC','#F48FB1','#8D6E63','#FFFFFF','#3A3230'];
