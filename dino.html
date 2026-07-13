@@ -101,6 +101,7 @@
 <header>
   <h1>🦕 恐龍小圖鑑</h1>
   <button class="chip" id="quizBtn">🎯 考考你</button>
+  <button class="chip" id="eggBtn">🥚 驚喜蛋</button>
   <span class="chip" id="stickerCount">⭐ 0</span>
 </header>
 
@@ -225,6 +226,57 @@ const DINOS = [
       '<circle cx="150" cy="42" r="16" fill="#4FC3F7"/>'+
       eye(154,38)+smile(154,48)
     )},
+  { id:'parasaur', zh:'副櫛龍', en:'Parasaurolophus', diet:'🌿 草食', size:'📏 約 10 公尺', era:'⏳ 白堊紀晚期',
+    fact:'副櫛龍頭上有一根長長的管子,像小喇叭一樣,可以「叭——叭——」吹出聲音跟朋友打招呼!',
+    svg: svgWrap(
+      '<path d="M26,120 Q6,112 12,94 Q30,102 46,108 Z" fill="#E06A96"/>'+
+      '<ellipse cx="88" cy="110" rx="44" ry="30" fill="#F48FB1"/>'+
+      '<rect x="62" y="126" width="15" height="26" rx="7" fill="#E06A96"/>'+
+      '<rect x="98" y="126" width="15" height="26" rx="7" fill="#E06A96"/>'+
+      '<circle cx="134" cy="66" r="26" fill="#F48FB1"/>'+
+      '<path d="M124,48 Q98,20 84,26 Q96,36 116,58 Z" fill="#F8BBD0"/>'+
+      '<path d="M148,76 Q162,82 170,76 L166,68 Z" fill="#F8BBD0"/>'+
+      eye(140,60)+smile(142,74)
+    )},
+  { id:'spino', zh:'棘龍', en:'Spinosaurus', diet:'🐟 吃魚', size:'📏 約 15 公尺', era:'⏳ 白堊紀',
+    fact:'棘龍背上有一面大大的帆,還會游泳抓魚吃,是最大的肉食恐龍之一!',
+    svg: svgWrap(
+      '<path d="M46,92 Q66,42 92,50 Q116,42 134,88 Z" fill="#FF8A65"/>'+
+      '<path d="M58,88 L58,60 M76,84 L76,52 M94,82 L94,50 M112,84 L112,56" stroke="#E06A45" stroke-width="4" stroke-linecap="round"/>'+
+      '<path d="M26,118 Q6,110 12,92 Q30,100 46,106 Z" fill="#78909C"/>'+
+      '<ellipse cx="90" cy="110" rx="46" ry="28" fill="#90A4AE"/>'+
+      '<rect x="64" y="126" width="15" height="26" rx="7" fill="#78909C"/>'+
+      '<rect x="100" y="126" width="15" height="26" rx="7" fill="#78909C"/>'+
+      '<circle cx="140" cy="72" r="24" fill="#90A4AE"/>'+
+      '<path d="M156,78 Q176,86 186,80 L182,70 Z" fill="#B0BEC5"/>'+
+      '<path d="M162,80 l4,6 4,-6 4,6" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>'+
+      eye(144,66)+smile(146,80)
+    )},
+  { id:'diplo', zh:'梁龍', en:'Diplodocus', diet:'🌿 草食', size:'📏 約 27 公尺', era:'⏳ 侏羅紀晚期',
+    fact:'梁龍是最長的恐龍之一!牠的尾巴甩起來「啪!」一聲,像鞭子一樣又快又響。',
+    svg: svgWrap(
+      '<path d="M46,112 Q20,116 8,104 Q2,96 10,90 Q22,100 48,100 Z" fill="#7986CB"/>'+
+      '<ellipse cx="92" cy="112" rx="42" ry="26" fill="#9FA8DA"/>'+
+      '<rect x="68" y="126" width="14" height="26" rx="7" fill="#7986CB"/>'+
+      '<rect x="102" y="126" width="14" height="26" rx="7" fill="#7986CB"/>'+
+      '<path d="M118,102 Q150,84 166,58 L182,68 Q166,96 132,116 Z" fill="#9FA8DA"/>'+
+      '<circle cx="176" cy="58" r="14" fill="#9FA8DA"/>'+
+      eye(180,54)+smile(180,64)
+    )},
+  { id:'archaeo', zh:'始祖鳥', en:'Archaeopteryx', diet:'🐛 吃蟲', size:'📏 約 0.5 公尺', era:'⏳ 侏羅紀晚期',
+    fact:'始祖鳥像鴿子一樣小,有羽毛也有牙齒,是恐龍變成鳥的證據喔!啾啾!',
+    svg: svgWrap(
+      '<path d="M60,116 Q30,132 14,128 Q28,116 44,104 Z" fill="#EF9A9A"/>'+
+      '<path d="M20,124 l8,-8 M30,120 l8,-8 M40,114 l8,-8" stroke="#FFCDD2" stroke-width="4" stroke-linecap="round"/>'+
+      '<ellipse cx="96" cy="96" rx="34" ry="26" fill="#EF9A9A"/>'+
+      '<path d="M84,86 Q54,64 40,68 Q54,86 78,98 Z" fill="#F48FB1"/>'+
+      '<path d="M88,92 Q66,78 56,80 Q68,92 84,100 Z" fill="#FFCDD2"/>'+
+      '<circle cx="128" cy="70" r="18" fill="#EF9A9A"/>'+
+      '<path d="M142,72 L158,76 L142,82 Z" fill="#FFB74D"/>'+
+      '<rect x="88" y="118" width="6" height="20" rx="3" fill="#B96A6A"/>'+
+      '<rect x="104" y="118" width="6" height="20" rx="3" fill="#B96A6A"/>'+
+      eye(130,66)
+    )},
 ];
 
 /* ---------- 叫聲合成(Web Audio) ---------- */
@@ -310,6 +362,24 @@ function roar(kind){
     case 'plesio': // 水裡的咕嚕轉音
       tone(c, {type:'sine', f0:300, dur:1.1, vol:0.2, vibF:7, vibD:60});
       tone(c, {type:'sine', f0:450, dur:0.9, at:0.2, vol:0.1, vibF:9, vibD:80});
+      break;
+    case 'parasaur': // 叭——叭——小喇叭
+      tone(c, {type:'triangle', f0:220, f1:330, dur:0.55, vol:0.26, vibF:5, vibD:8});
+      tone(c, {type:'triangle', f0:440, f1:660, dur:0.55, vol:0.1});
+      tone(c, {type:'triangle', f0:330, f1:262, dur:0.7, at:0.65, vol:0.26, vibF:5, vibD:8});
+      tone(c, {type:'triangle', f0:660, f1:524, dur:0.7, at:0.65, vol:0.1});
+      break;
+    case 'spino': // 水邊的低吼
+      tone(c, {type:'sawtooth', f0:120, f1:65, dur:1.2, vol:0.28, lp:450, vibF:9, vibD:30});
+      hiss(c, {dur:1.0, lp:500, vol:0.1});
+      break;
+    case 'diplo': // 啪!甩尾巴 + 低鳴
+      hiss(c, {dur:0.1, lp:4000, vol:0.3});
+      tone(c, {type:'sine', f0:65, dur:1.3, at:0.25, vol:0.3, vibF:3, vibD:5});
+      break;
+    case 'archaeo': // 啾啾鳥叫
+      for(let i = 0; i < 4; i++)
+        tone(c, {type:'sine', f0:1800, f1:2500, dur:0.1, at:i*0.16, vol:0.09});
       break;
   }
 }
@@ -419,6 +489,67 @@ function startQuiz(){
   });
   overlay.hidden = false;
 }
+/* ---------- 驚喜蛋 ---------- */
+document.getElementById('eggBtn').addEventListener('click', startEgg);
+
+function eggSvg(cracks){
+  let c = '';
+  if(cracks >= 1) c += '<path d="M78,60 l10,12 -8,10 12,12" stroke="#C8A63C" stroke-width="3.5" fill="none" stroke-linecap="round"/>';
+  if(cracks >= 2) c += '<path d="M124,54 l-8,14 10,8 -8,14" stroke="#C8A63C" stroke-width="3.5" fill="none" stroke-linecap="round"/>'+
+                       '<path d="M96,116 l8,-12 10,10" stroke="#C8A63C" stroke-width="3.5" fill="none" stroke-linecap="round"/>';
+  return '<svg viewBox="0 0 200 160" role="img" style="width:min(55%,12rem)">'+
+    '<ellipse cx="100" cy="140" rx="52" ry="10" fill="rgba(0,0,0,.08)"/>'+
+    '<path d="M100,22 C136,22 152,68 152,98 C152,126 129,144 100,144 C71,144 48,126 48,98 C48,68 64,22 100,22 Z" fill="#FFF3D6" stroke="#EBD9A8" stroke-width="3"/>'+
+    '<circle cx="82" cy="72" r="7" fill="#FFE1A8"/>'+
+    '<circle cx="118" cy="96" r="9" fill="#FFE1A8"/>'+
+    '<circle cx="92" cy="112" r="6" fill="#FFE1A8"/>'+
+    c + '</svg>';
+}
+function knock(){
+  const c = audio();
+  tone(c, {type:'sine', f0:220, f1:150, dur:0.12, vol:0.3});
+}
+function startEgg(){
+  let taps = 0;
+  sheet.innerHTML =
+    '<button class="close" aria-label="關閉">✕</button>' +
+    '<div class="quizQ">咚咚咚…裡面是誰呀?<br>點蛋 3 下,把牠孵出來!</div>' +
+    '<div id="eggBox" style="cursor:pointer">' + eggSvg(0) + '</div>' +
+    '<div class="quizMsg" id="eggMsg">👆 點我!</div>';
+  sheet.querySelector('.close').addEventListener('click', closeSheet);
+  say('咚咚咚,裡面是誰呀?點蛋三下,把牠孵出來!');
+  const box = sheet.querySelector('#eggBox');
+  box.addEventListener('click', () => {
+    taps++;
+    knock();
+    if(taps < 3){
+      box.innerHTML = eggSvg(taps);
+      box.classList.remove('wiggle'); void box.offsetWidth; box.classList.add('wiggle');
+      document.getElementById('eggMsg').textContent = taps === 1 ? '有聲音!再點!' : '殼裂開了!最後一下!';
+    } else {
+      const d = DINOS[Math.floor(Math.random() * DINOS.length)];
+      sheet.innerHTML =
+        '<button class="close" aria-label="關閉">✕</button>' +
+        '<div class="quizQ">🎉 孵出來了!</div>' +
+        '<div class="wiggle" style="width:min(60%,13rem);margin:0 auto">' + d.svg + '</div>' +
+        '<h2>' + d.zh + '寶寶</h2><p class="en">Baby ' + d.en + '</p>' +
+        '<p class="funfact">' + d.fact + '</p>' +
+        '<div class="bigbtns">' +
+          '<button class="bigbtn roarbtn">🔊 聽叫聲</button>' +
+          '<button class="bigbtn saybtn">🥚 再孵一顆</button>' +
+        '</div>';
+      sheet.querySelector('.close').addEventListener('click', closeSheet);
+      sheet.querySelector('.roarbtn').addEventListener('click', () => roar(d.id));
+      sheet.querySelector('.saybtn').addEventListener('click', startEgg);
+      roar(d.id);
+      say('孵出來了!是' + d.zh + '寶寶!');
+      addSticker('🥚');
+      confetti();
+    }
+  });
+  overlay.hidden = false;
+}
+
 function pickSticker(){
   const s = ['🦖','🦕','🌋','🥚','🌿','⭐','🌈','🍖'];
   return s[Math.floor(Math.random() * s.length)];
