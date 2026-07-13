@@ -93,6 +93,40 @@
   #paintArt [fill]:not([fill="none"]) { cursor: pointer; }
   .miniGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
   .miniGrid .card { padding: .4rem; }
+  /* 遊戲選單 */
+  .menuGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .7rem; }
+  .menuBtn {
+    display: flex; flex-direction: column; align-items: center; gap: .15rem;
+    border: 0; border-radius: 1.2rem; padding: .9rem .4rem; cursor: pointer;
+    background: #fff; box-shadow: 0 4px 0 rgba(0,0,0,.1);
+    font-size: 1.05rem; font-weight: 800; color: #3A3230;
+  }
+  .menuBtn:active { transform: translateY(3px); box-shadow: none; }
+  .menuBtn .ico { font-size: 2.2rem; }
+  /* 餵恐龍 */
+  .foodRow { display: flex; gap: .8rem; justify-content: center; margin: .6rem 0; }
+  .foodBtn {
+    border: 0; border-radius: 1.2rem; background: #fff; cursor: pointer;
+    font-size: 2.6rem; padding: .55rem .9rem; box-shadow: 0 4px 0 rgba(0,0,0,.12);
+  }
+  .foodBtn:active { transform: translateY(3px); box-shadow: none; }
+  /* 翻翻樂 */
+  .memGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; perspective: 700px; }
+  .memCard { position: relative; aspect-ratio: 1; border: 0; background: none; padding: 0; cursor: pointer; }
+  .memCard .inner {
+    position: absolute; inset: 0; transition: transform .4s;
+    transform-style: preserve-3d;
+  }
+  .memCard.open .inner { transform: rotateY(180deg); }
+  .memFace {
+    position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border-radius: 1rem; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 0 rgba(0,0,0,.1);
+  }
+  .memFace.back { background: #FFD54F; font-size: 2rem; }
+  .memFace.front { background: #fff; transform: rotateY(180deg); padding: .25rem; }
+  .memFace.front svg { width: 100%; height: 100%; }
+  .memCard.matched .memFace.front { background: #DCEDC8; }
   .bigbtn:active { transform: translateY(3px); box-shadow: none; }
   .wiggle { animation: wiggle .5s; }
   @keyframes wiggle {
@@ -130,10 +164,7 @@
 <body>
 <header>
   <h1>🦕 恐龍小圖鑑</h1>
-  <button class="chip" id="quizBtn">🎯 考考你</button>
-  <button class="chip" id="eggBtn">🥚 驚喜蛋</button>
-  <button class="chip" id="paintBtn">🎨 著色本</button>
-  <button class="chip" id="footBtn">🦶 腳印</button>
+  <button class="chip" id="gameBtn">🎮 遊戲樂園</button>
   <button class="chip" id="nightBtn" aria-label="晚安模式">🌙</button>
   <span class="chip" id="stickerCount">⭐ 0</span>
 </header>
@@ -513,8 +544,6 @@ function shuffle(a){
   }
   return a;
 }
-document.getElementById('quizBtn').addEventListener('click', startQuiz);
-
 function startQuiz(){
   const opts = shuffle(DINOS.slice()).slice(0, 3);
   const target = opts[Math.floor(Math.random() * opts.length)];
@@ -618,8 +647,6 @@ const FOOTPRINTS = {
       '<path d="M100,96 L100,50 M100,96 L68,62 M100,96 L132,62 M100,96 L100,122" stroke="#6D4C41" stroke-width="9" stroke-linecap="round" fill="none"/>'
     )},
 };
-document.getElementById('footBtn').addEventListener('click', startFoot);
-
 function startFoot(){
   const keys = Object.keys(FOOTPRINTS);
   const key = keys[Math.floor(Math.random() * keys.length)];
@@ -670,8 +697,6 @@ function startFoot(){
 /* ---------- 著色本 ---------- */
 const PAINTS = ['#F44336','#FF9800','#FFEB3B','#8BC34A','#26A69A','#4FC3F7','#5C6BC0',
                 '#AB47BC','#F48FB1','#8D6E63','#FFFFFF','#3A3230'];
-document.getElementById('paintBtn').addEventListener('click', startPaintPick);
-
 function startPaintPick(){
   sheet.innerHTML =
     '<button class="close" aria-label="關閉">✕</button>' +
@@ -741,8 +766,6 @@ function startPaint(d){
 }
 
 /* ---------- 驚喜蛋 ---------- */
-document.getElementById('eggBtn').addEventListener('click', startEgg);
-
 function eggSvg(cracks){
   let c = '';
   if(cracks >= 1) c += '<path d="M78,60 l10,12 -8,10 12,12" stroke="#C8A63C" stroke-width="3.5" fill="none" stroke-linecap="round"/>';
@@ -816,6 +839,144 @@ function confetti(){
     document.body.appendChild(e);
     setTimeout(() => e.remove(), 1800);
   }
+}
+
+/* ---------- 遊戲樂園選單 ---------- */
+const GAMES = [
+  { ico:'🎯', label:'考考你',  fn: startQuiz },
+  { ico:'🦶', label:'猜腳印',  fn: startFoot },
+  { ico:'🥚', label:'驚喜蛋',  fn: startEgg },
+  { ico:'🎨', label:'著色本',  fn: startPaintPick },
+  { ico:'🍖', label:'餵恐龍',  fn: startFeed },
+  { ico:'🃏', label:'翻翻樂',  fn: startMemory },
+];
+document.getElementById('gameBtn').addEventListener('click', startGameMenu);
+
+function startGameMenu(){
+  sheet.innerHTML =
+    '<button class="close" aria-label="關閉">✕</button>' +
+    '<div class="quizQ">🎮 要玩什麼遊戲呢?</div>' +
+    '<div class="menuGrid"></div>' +
+    '<div class="shelf">' + getStickers().join('') + '</div>';
+  sheet.querySelector('.close').addEventListener('click', closeSheet);
+  const box = sheet.querySelector('.menuGrid');
+  GAMES.forEach(g => {
+    const b = document.createElement('button');
+    b.className = 'menuBtn';
+    b.innerHTML = '<span class="ico">' + g.ico + '</span>' + g.label;
+    b.addEventListener('click', g.fn);
+    box.appendChild(b);
+  });
+  say('要玩什麼遊戲呢?');
+  overlay.hidden = false;
+}
+
+/* ---------- 餵恐龍 ---------- */
+const FOODS = { '🍖':'肉肉', '🌿':'嫩葉', '🐟':'小魚', '🐛':'小蟲' };
+function chomp(){
+  const c = audio();
+  for(let i = 0; i < 3; i++){
+    tone(c, {type:'sawtooth', f0:160, f1:110, dur:0.13, at:i*0.22, vol:0.2, lp:500});
+    hiss(c, {dur:0.08, at:i*0.22, lp:900, vol:0.08});
+  }
+}
+function startFeed(){
+  const d = DINOS[Math.floor(Math.random() * DINOS.length)];
+  const correct = [...d.diet][0]; // 食性欄第一個 emoji
+  const others = shuffle(Object.keys(FOODS).filter(f => f !== correct)).slice(0, 2);
+  const opts = shuffle([correct, ...others]);
+  sheet.innerHTML =
+    '<button class="close" aria-label="關閉">✕</button>' +
+    '<div class="quizQ">' + d.zh + '的肚子咕嚕咕嚕叫,<br>牠想吃什麼呢?</div>' +
+    '<div id="feedArt" style="width:min(55%,12rem);margin:0 auto">' + d.svg + '</div>' +
+    '<div class="foodRow"></div>' +
+    '<div class="quizMsg"></div>' +
+    '<div class="shelf">' + getStickers().join('') + '</div>';
+  sheet.querySelector('.close').addEventListener('click', closeSheet);
+  const row = sheet.querySelector('.foodRow');
+  const msg = sheet.querySelector('.quizMsg');
+  say(d.zh + '的肚子咕嚕咕嚕叫,牠想吃什麼呢?');
+  opts.forEach(f => {
+    const b = document.createElement('button');
+    b.className = 'foodBtn';
+    b.textContent = f;
+    b.setAttribute('aria-label', FOODS[f]);
+    b.addEventListener('click', () => {
+      const art = document.getElementById('feedArt');
+      if(f === correct){
+        chomp();
+        art.classList.remove('wiggle'); void art.offsetWidth; art.classList.add('wiggle');
+        msg.textContent = '😋 啊姆啊姆!' + d.zh + '最喜歡吃' + FOODS[f] + '了!';
+        say('啊姆啊姆,好好吃!' + d.zh + '最喜歡吃' + FOODS[f] + '了!');
+        addSticker('🍎');
+        sheet.querySelector('.shelf').textContent = getStickers().join('');
+        confetti();
+        setTimeout(() => { if(!overlay.hidden && document.body.contains(msg)) startFeed(); }, 2200);
+      } else {
+        msg.textContent = '牠搖搖頭,不想吃這個耶,再試試!';
+        art.classList.remove('wiggle'); void art.offsetWidth; art.classList.add('wiggle');
+      }
+    });
+    row.appendChild(b);
+  });
+  overlay.hidden = false;
+}
+
+/* ---------- 翻翻樂 ---------- */
+function startMemory(){
+  const pick = shuffle(DINOS.slice()).slice(0, 3);
+  const deck = shuffle([...pick, ...pick]);
+  let openCards = [], lock = false, matchedCount = 0;
+  sheet.innerHTML =
+    '<button class="close" aria-label="關閉">✕</button>' +
+    '<div class="quizQ">🃏 翻翻樂<br><small style="font-weight:400;font-size:.85rem">找出一樣的恐龍!</small></div>' +
+    '<div class="memGrid"></div>' +
+    '<div class="quizMsg"></div>' +
+    '<div class="shelf">' + getStickers().join('') + '</div>';
+  sheet.querySelector('.close').addEventListener('click', closeSheet);
+  const box = sheet.querySelector('.memGrid');
+  const msg = sheet.querySelector('.quizMsg');
+  say('翻翻看,找出兩隻一樣的恐龍!');
+  deck.forEach(d => {
+    const b = document.createElement('button');
+    b.className = 'memCard';
+    b.innerHTML =
+      '<span class="inner">' +
+        '<span class="memFace back">🥚</span>' +
+        '<span class="memFace front">' + d.svg + '</span>' +
+      '</span>';
+    b.addEventListener('click', () => {
+      if(lock || b.classList.contains('open')) return;
+      pop();
+      b.classList.add('open');
+      openCards.push({ el: b, d: d });
+      if(openCards.length === 2){
+        const [a, c] = openCards;
+        if(a.d.id === c.d.id){
+          a.el.classList.add('matched'); c.el.classList.add('matched');
+          roar(d.id);
+          matchedCount++;
+          openCards = [];
+          if(matchedCount === 3){
+            msg.textContent = '🎉 全部找到了,你的記憶力超棒!';
+            say('哇,全部找到了,你的記憶力超棒!');
+            addSticker('🌟');
+            sheet.querySelector('.shelf').textContent = getStickers().join('');
+            confetti();
+            setTimeout(() => { if(!overlay.hidden && document.body.contains(msg)) startMemory(); }, 2400);
+          }
+        } else {
+          lock = true;
+          setTimeout(() => {
+            a.el.classList.remove('open'); c.el.classList.remove('open');
+            openCards = []; lock = false;
+          }, 900);
+        }
+      }
+    });
+    box.appendChild(b);
+  });
+  overlay.hidden = false;
 }
 
 renderStickerCount();
